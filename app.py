@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import logging
 import os
 from tools.read_file import read_file
@@ -57,18 +57,9 @@ def handle_search_and_replace():
     else:
         return jsonify({'error': 'Failed to perform search and replace'}), 500
 
-@app.route('/', methods=['GET'])
-def home():
-    return render_template('index.html')
-
-if __name__ == '__main__':
-    logging.info("Starting Flask server...")
-    app.run(host='0.0.0.0', port=5001, debug=True)
-from flask import Flask, render_template, request, jsonify
 from agents.base_agent import BaseAgent
 import asyncio
 
-app = Flask(__name__)
 agent = BaseAgent()
 
 @app.route('/')
@@ -90,4 +81,5 @@ async def create_assistant():
     return jsonify(assistant)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    logging.info("Starting Flask server...")
+    app.run(host='0.0.0.0', port=5001, debug=True)
