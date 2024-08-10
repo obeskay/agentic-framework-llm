@@ -1,12 +1,45 @@
 import openai
 import speech_recognition as sr
 import pyttsx3
+import threading
 
 # Configuración de OpenAI
 openai.api_key = 'tu_api_key_aqui'
 
 # Inicialización de TTS
 engine = pyttsx3.init()
+
+class BaseAgent:
+    def __init__(self, model="gpt-4o-mini"):
+        self.model = model
+
+    def send_message(self, message):
+        response = openai.ChatCompletion.create(
+            model=self.model,
+            messages=[{"role": "user", "content": message}]
+        )
+        return response['choices'][0]['message']['content']
+
+class MemoryManager:
+    def __init__(self):
+        self.short_term_memory = []
+        self.long_term_memory = {}
+
+    def add_to_memory(self, key, value):
+        self.long_term_memory[key] = value
+
+    def get_from_memory(self, key):
+        return self.long_term_memory.get(key, None)
+
+class SelfImprovementAgent:
+    def __init__(self, agent):
+        self.agent = agent
+
+    def self_improvement(self):
+        improvement_prompt = "¿Cómo puedo mejorar mi código o lógica para ser más eficiente?"
+        suggestion = self.agent.send_message(improvement_prompt)
+        print(f"Sugerencia de mejora: {suggestion}")
+        speak(suggestion)
 
 def speak(text):
     engine.say(text)
@@ -28,28 +61,18 @@ def listen():
             print(f"Error al solicitar resultados de Google Speech Recognition; {e}")
             return None
 
-def self_improvement():
-    improvement_prompt = "¿Cómo puedo mejorar mi código o lógica para ser más eficiente?"
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": improvement_prompt}]
-    )
-    improvement_suggestion = response['choices'][0]['message']['content']
-    print(f"Sugerencia de mejora: {improvement_suggestion}")
-    speak(improvement_suggestion)
-
 def main():
+    base_agent = BaseAgent()
+    memory_manager = MemoryManager()
+    self_improvement_agent = SelfImprovementAgent(base_agent)
+
     while True:
         command = listen()
         if command:
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": command}]
-            )
-            reply = response['choices'][0]['message']['content']
+            reply = base_agent.send_message(command)
             print(f"Respuesta: {reply}")
             speak(reply)
-            self_improvement()  # Llamar a la función de auto-mejora después de cada respuesta
+            self_improvement_agent.self_improvement()  # Llamar a la función de auto-mejora después de cada respuesta
 
 if __name__ == '__main__':
     main()
