@@ -1,14 +1,15 @@
 import asyncio
+import logging
 from flask import Flask, request, jsonify, render_template
 from user_interface import UserInterface
 from agents.base_agent import BaseAgent
 from tools.read_file import read_file
 from tools.write_file import write_file
 from tools.search_and_replace import search_and_replace
-import logging
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 agent = BaseAgent()
 
@@ -19,25 +20,29 @@ def index():
 @app.route('/send_message', methods=['POST'])
 async def send_message():
     try:
-        content = request.json['message']
-        logging.info(f"Received message: {content}")
+        content = request.json.get('message')
+        if not content:
+            logger.warning("Received empty message")
+            return jsonify({'error': 'Message content is required'}), 400
+
+        logger.info(f"Received message: {content}")
         
         if agent.assistant_id is None:
-            logging.error("Assistant not initialized")
-            return jsonify({'error': 'Assistant not initialized'}), 500
+            logger.error("Assistant not initialized")
+            return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
         
-        logging.info(f"Sending message to assistant {agent.assistant_id}")
+        logger.info(f"Sending message to assistant {agent.assistant_id}")
         response = await agent.send_message(None, content)
         
         if response is None:
-            logging.error("Failed to get response from assistant")
-            return jsonify({'error': 'Failed to get response from assistant'}), 500
+            logger.error("Failed to get response from assistant")
+            return jsonify({'error': 'Failed to get response from assistant. Please try again later.'}), 500
         
-        logging.info(f"Received response from assistant: {response}")
+        logger.info(f"Received response from assistant: {response}")
         return jsonify(response)
     except Exception as e:
-        logging.exception(f"Error in send_message: {str(e)}")
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+        logger.exception(f"Unexpected error in send_message: {str(e)}")
+        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
 
 @app.route('/create_assistant', methods=['POST'])
 async def create_assistant():
@@ -91,6 +96,7 @@ def handle_search_and_replace():
 
 async def setup_assistant():
     try:
+        logger.info("Setting up assistant...")
         assistant = await agent.create_assistant(
             name="Task Assistant",
             instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
@@ -103,12 +109,12 @@ async def setup_assistant():
         )
         
         if assistant is None:
-            print("Failed to create assistant. Exiting.")
+            logger.error("Failed to create assistant. Exiting.")
             return False
-        print(f"Assistant created successfully with ID: {agent.assistant_id}")
+        logger.info(f"Assistant created successfully with ID: {agent.assistant_id}")
         return True
     except Exception as e:
-        print(f"Error creating assistant: {str(e)}")
+        logger.exception(f"Error creating assistant: {str(e)}")
         return False
 
 async def run_user_interface():
@@ -119,17 +125,20 @@ def run_flask():
     app.run(host='0.0.0.0', port=5001, debug=True, use_reloader=False)
 
 async def main():
-    if not await setup_assistant():
-        return
+    try:
+        if not await setup_assistant():
+            logger.error("Failed to set up assistant. Exiting.")
+            return
 
-    # Ejecutar la interfaz de usuario en un hilo separado
-    ui_task = asyncio.create_task(run_user_interface())
+        logger.info("Starting user interface...")
+        ui_task = asyncio.create_task(run_user_interface())
 
-    # Ejecutar Flask en el hilo principal
-    await asyncio.to_thread(run_flask)
+        logger.info("Starting Flask server...")
+        await asyncio.to_thread(run_flask)
 
-    # Esperar a que la interfaz de usuario termine (si es necesario)
-    await ui_task
+        await ui_task
+    except Exception as e:
+        logger.exception(f"Unexpected error in main function: {str(e)}")
 
 if __name__ == "__main__":
     asyncio.run(main())
