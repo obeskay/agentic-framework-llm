@@ -37,38 +37,38 @@ class SendMessageView(View):
     methods = ['POST']
 
     def dispatch_request(self):
-    try:
-        content = request.json.get('message')
-        if not content:
-            logger.warning("Received empty message")
-            return jsonify({'error': 'Message content is required'}), 400
-
-        logger.info(f"Received message: {content}")
-        
-        if agent.assistant_id is None:
-            logger.error("Assistant not initialized")
-            return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
-        
-        logger.info(f"Sending message to assistant {agent.assistant_id}")
         try:
-            response = await agent.send_message(None, content)
+            content = request.json.get('message')
+            if not content:
+                logger.warning("Received empty message")
+                return jsonify({'error': 'Message content is required'}), 400
+
+            logger.info(f"Received message: {content}")
+            
+            if agent.assistant_id is None:
+                logger.error("Assistant not initialized")
+                return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
+            
+            logger.info(f"Sending message to assistant {agent.assistant_id}")
+            try:
+                response = agent.send_message(None, content)
+            except Exception as e:
+                logger.exception(f"Error sending message to assistant: {str(e)}")
+                return jsonify({'error': f'Error sending message to assistant: {str(e)}'}), 500
+            
+            if response is None:
+                logger.error("Failed to get response from assistant")
+                return jsonify({'error': 'Failed to get response from assistant. Please try again later.'}), 500
+            
+            logger.info(f"Received response from assistant: {response}")
+            return jsonify(response)
         except Exception as e:
-            logger.exception(f"Error sending message to assistant: {str(e)}")
-            return jsonify({'error': f'Error sending message to assistant: {str(e)}'}), 500
-        
-        if response is None:
-            logger.error("Failed to get response from assistant")
-            return jsonify({'error': 'Failed to get response from assistant. Please try again later.'}), 500
-        
-        logger.info(f"Received response from assistant: {response}")
-        return jsonify(response)
-    except Exception as e:
-        logger.exception(f"Unexpected error in send_message: {str(e)}")
-        error_details = str(e)
-        if hasattr(e, 'response'):
-            error_details += f"\nResponse status: {e.response.status_code}"
-            error_details += f"\nResponse content: {e.response.text}"
-        return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
+            logger.exception(f"Unexpected error in send_message: {str(e)}")
+            error_details = str(e)
+            if hasattr(e, 'response'):
+                error_details += f"\nResponse status: {e.response.status_code}"
+                error_details += f"\nResponse content: {e.response.text}"
+            return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
 
 class CreateAssistantView(View):
     methods = ['POST']
