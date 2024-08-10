@@ -36,19 +36,6 @@ class SelfImprovementAgent(BaseAgent):
         print("Applying proposed improvements...")
         for issue in self.issues:
             # Placeholder for actual improvement application logic
-            print(f"Applied fix for {issue}")
-
-    def propose_improvements(self):
-        # Propose improvements based on detailed analysis
-        print("Proposing improvements based on detailed analysis...")
-        for issue in self.issues:
-            print(f"Proposed improvement: {issue}")
-
-    def apply_improvements(self):
-        # Automate the application of proposed improvements
-        print("Applying proposed improvements...")
-        for issue in self.issues:
-            # Placeholder for actual improvement application logic
             # Example: Apply a simple fix for unused imports
             if "Unused imports" in issue:
                 file_path = issue.split(" ")[-1]
