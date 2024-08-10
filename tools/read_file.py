@@ -19,3 +19,7 @@ def read_file(file_path: str) -> tuple:
     except IOError as e:
         print(f"Error: Unable to read the file {file_path}. Details: {e}")
         return "", False
+    
+    if not content:
+        print(f"Warning: The file {file_path} is empty.")
+        return "", False

@@ -17,3 +17,7 @@ def write_file(file_path: str, content: str) -> bool:
     except IOError as e:
         print(f"Error: Unable to write to the file {file_path}. Details: {e}")
         return False
+    
+    if not content:
+        print(f"Warning: No content provided to write to {file_path}.")
+        return False
