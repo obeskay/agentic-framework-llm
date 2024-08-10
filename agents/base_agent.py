@@ -50,6 +50,7 @@ class BaseAgent:
         try:
             if thread_id is None:
                 if self.thread_id is None:
+                    logging.info("Creating new thread")
                     thread = await self.create_thread()
                     if thread is None:
                         raise ValueError("Failed to create a new thread")
@@ -57,6 +58,7 @@ class BaseAgent:
                 else:
                     thread_id = self.thread_id
 
+            logging.info(f"Creating message in thread {thread_id}")
             message = await self.client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
@@ -66,11 +68,13 @@ class BaseAgent:
             if self.assistant_id is None:
                 raise ValueError("Assistant ID is not set. Please create an assistant first.")
 
+            logging.info(f"Creating run with assistant {self.assistant_id}")
             run = await self.client.beta.threads.runs.create(
                 thread_id=thread_id,
                 assistant_id=self.assistant_id,
                 instructions="Please respond to the user's message."
             )
+            logging.info(f"Waiting for response from run {run.id}")
             return await self._wait_for_response(thread_id, run.id)
         except Exception as e:
             self._handle_error(e, "Error sending message")

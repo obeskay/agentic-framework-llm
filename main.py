@@ -20,14 +20,23 @@ def index():
 async def send_message():
     try:
         content = request.json['message']
+        logging.info(f"Received message: {content}")
+        
         if agent.assistant_id is None:
+            logging.error("Assistant not initialized")
             return jsonify({'error': 'Assistant not initialized'}), 500
+        
+        logging.info(f"Sending message to assistant {agent.assistant_id}")
         response = await agent.send_message(None, content)
+        
         if response is None:
+            logging.error("Failed to get response from assistant")
             return jsonify({'error': 'Failed to get response from assistant'}), 500
+        
+        logging.info(f"Received response from assistant: {response}")
         return jsonify(response)
     except Exception as e:
-        logging.error(f"Error in send_message: {str(e)}")
+        logging.exception(f"Error in send_message: {str(e)}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/create_assistant', methods=['POST'])
