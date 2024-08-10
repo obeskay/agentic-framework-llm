@@ -9,7 +9,10 @@ agent = BaseAgent()
 def setup_assistant():
     try:
         logger.info("Setting up assistant...")
-        assistant = agent.create_assistant(
+        retries = 0
+        while retries < agent.max_retries:
+            try:
+                assistant = agent.create_assistant(
             name="Task Assistant",
             instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
             tools=[
@@ -20,10 +23,25 @@ def setup_assistant():
             ]
         )
         
-        if assistant is None:
+                if assistant is None or 'id' not in assistant:
+                    logger.error("Failed to create assistant. Retrying...")
+                    retries += 1
+                    continue
+                agent.assistant_id = assistant['id']
+                logger.info(f"Assistant created successfully with ID: {assistant['id']}")
+                break
+            except Exception as e:
+                logger.exception(f"Error creating assistant: {str(e)}")
+                if hasattr(e, 'response'):
+                    logger.error(f"Response status: {e.response.status_code}")
+                    logger.error(f"Response content: {e.response.text}")
+                retries += 1
+        else:
+            logger.error("Failed to create assistant after multiple retries. Exiting.")
+            return False
             logger.error("Failed to create assistant. Exiting.")
             return False
-        logger.info(f"Assistant created successfully with ID: {agent.assistant_id}")
+        logger.info(f"Assistant created successfully with ID: {assistant['id']}")
         return True
     except Exception as e:
         logger.exception(f"Error creating assistant: {str(e)}")
