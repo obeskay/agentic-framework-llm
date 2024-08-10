@@ -1,9 +1,7 @@
-import asyncio
 import logging
 import subprocess
+import threading
 from flask import Flask, request, jsonify, render_template
-from flask.views import View
-from werkzeug.exceptions import HTTPException
 from user_interface import UserInterface
 from agents.base_agent import BaseAgent
 from tools.read_file import read_file
@@ -12,8 +10,6 @@ from tools.search_and_replace import search_and_replace
 
 app = Flask(__name__)
 
-app.add_url_rule('/send_message', view_func=SendMessageView.as_view('send_message'))
-app.add_url_rule('/create_assistant', view_func=CreateAssistantView.as_view('create_assistant'))
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -33,51 +29,47 @@ def update_git_repository():
 def index():
     return render_template('index.html')
 
-class SendMessageView(View):
-    methods = ['POST']
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    try:
+        content = request.json.get('message')
+        if not content:
+            logger.warning("Received empty message")
+            return jsonify({'error': 'Message content is required'}), 400
 
-    def dispatch_request(self):
+        logger.info(f"Received message: {content}")
+        
+        if agent.assistant_id is None:
+            logger.error("Assistant not initialized")
+            return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
+        
+        logger.info(f"Sending message to assistant {agent.assistant_id}")
         try:
-            content = request.json.get('message')
-            if not content:
-                logger.warning("Received empty message")
-                return jsonify({'error': 'Message content is required'}), 400
-
-            logger.info(f"Received message: {content}")
-            
-            if agent.assistant_id is None:
-                logger.error("Assistant not initialized")
-                return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
-            
-            logger.info(f"Sending message to assistant {agent.assistant_id}")
-            try:
-                response = agent.send_message(None, content)
-            except Exception as e:
-                logger.exception(f"Error sending message to assistant: {str(e)}")
-                return jsonify({'error': f'Error sending message to assistant: {str(e)}'}), 500
-            
-            if response is None:
-                logger.error("Failed to get response from assistant")
-                return jsonify({'error': 'Failed to get response from assistant. Please try again later.'}), 500
-            
-            logger.info(f"Received response from assistant: {response}")
-            return jsonify(response)
+            response = agent.send_message(None, content)
         except Exception as e:
-            logger.exception(f"Unexpected error in send_message: {str(e)}")
-            error_details = str(e)
-            if hasattr(e, 'response'):
-                error_details += f"\nResponse status: {e.response.status_code}"
-                error_details += f"\nResponse content: {e.response.text}"
-            return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
+            logger.exception(f"Error sending message to assistant: {str(e)}")
+            return jsonify({'error': f'Error sending message to assistant: {str(e)}'}), 500
+        
+        if response is None:
+            logger.error("Failed to get response from assistant")
+            return jsonify({'error': 'Failed to get response from assistant. Please try again later.'}), 500
+        
+        logger.info(f"Received response from assistant: {response}")
+        return jsonify(response)
+    except Exception as e:
+        logger.exception(f"Unexpected error in send_message: {str(e)}")
+        error_details = str(e)
+        if hasattr(e, 'response'):
+            error_details += f"\nResponse status: {e.response.status_code}"
+            error_details += f"\nResponse content: {e.response.text}"
+        return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
 
-class CreateAssistantView(View):
-    methods = ['POST']
-
-    def dispatch_request(self):
+@app.route('/create_assistant', methods=['POST'])
+def create_assistant():
     name = request.json['name']
     instructions = request.json['instructions']
     tools = request.json['tools']
-    assistant = await agent.create_assistant(name, instructions, tools)
+    assistant = agent.create_assistant(name, instructions, tools)
     return jsonify(assistant)
 
 @app.route('/api/read_file', methods=['POST'])
@@ -125,7 +117,7 @@ def handle_search_and_replace():
 def setup_assistant():
     try:
         logger.info("Setting up assistant...")
-        assistant = await agent.create_assistant(
+        assistant = agent.create_assistant(
             name="Task Assistant",
             instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
             tools=[
