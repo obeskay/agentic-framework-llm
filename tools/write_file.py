@@ -21,3 +21,7 @@ def write_file(file_path: str, content: str) -> bool:
     if not content:
         print(f"Warning: No content provided to write to {file_path}.")
         return False
+    
+    if not content:
+        print(f"Warning: No content provided to write to {file_path}.")
+        return False
