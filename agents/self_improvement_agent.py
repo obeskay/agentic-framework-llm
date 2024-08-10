@@ -1,5 +1,7 @@
 import os
 import inspect
+import pylint.lint
+import flake8.api.legacy as flake8
 from .base_agent import BaseAgent
 
 class SelfImprovementAgent(BaseAgent):
@@ -12,19 +14,29 @@ class SelfImprovementAgent(BaseAgent):
             for file in files:
                 if file.endswith(".py"):
                     file_path = os.path.join(root, file)
-                    with open(file_path, 'r') as f:
-                        content = f.read()
-                        print(f"Analyzing {file}...")
-                        # Perform more detailed analysis
-                        self._detailed_analysis(content, file_path)
+                    print(f"Analyzing {file}...")
+                    # Perform more detailed analysis
+                    self._detailed_analysis(file_path)
 
-    def _detailed_analysis(self, content, file_path):
-        # Detailed analysis logic
-        # This could involve syntax checking, complexity analysis, etc.
-        print(f"Performing detailed analysis on {file_path}...")
-        # Example: Check for common issues like unused imports
-        if "import" in content:
-            self.issues.append(f"Unused imports found in {file_path}")
+    def _detailed_analysis(self, file_path):
+        # Detailed analysis logic using pylint and flake8
+        pylint_results = pylint.lint.Run([file_path], do_exit=False)
+        flake8_results = flake8.get_style_guide().check_files([file_path])
+        self.issues.extend([message for message in pylint_results.linter.stats.global_note])
+        self.issues.extend(flake8_results.get_statistics('E'))
+
+    def propose_improvements(self):
+        # Propose improvements based on detailed analysis
+        print("Proposing improvements based on detailed analysis...")
+        for issue in self.issues:
+            print(f"Proposed improvement: {issue}")
+
+    def apply_improvements(self):
+        # Automate the application of proposed improvements
+        print("Applying proposed improvements...")
+        for issue in self.issues:
+            # Placeholder for actual improvement application logic
+            print(f"Applied fix for {issue}")
 
     def propose_improvements(self):
         # Propose improvements based on detailed analysis
