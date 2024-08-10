@@ -23,6 +23,8 @@ class BaseAgent:
         print(f"Error in API call: {error}")
 
     def _critique_response(self, response):
-        # Placeholder for response critique logic
-        # This could involve checking the response for coherence, relevance, etc.
-        pass
+        # Basic critique logic to check for coherence and relevance
+        content = response.choices[0].message.content
+        if not content or len(content.split()) < 5:  # Simple check for coherence
+            print("Response seems too short or incoherent.")
+        # Additional checks for relevance can be added here
