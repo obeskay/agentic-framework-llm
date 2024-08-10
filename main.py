@@ -43,7 +43,11 @@ async def send_message():
             return jsonify({'error': 'Assistant not initialized. Please create an assistant first.'}), 500
         
         logger.info(f"Sending message to assistant {agent.assistant_id}")
-        response = await agent.send_message(None, content)
+        try:
+            response = await agent.send_message(None, content)
+        except Exception as e:
+            logger.exception(f"Error sending message to assistant: {str(e)}")
+            return jsonify({'error': f'Error sending message to assistant: {str(e)}'}), 500
         
         if response is None:
             logger.error("Failed to get response from assistant")
@@ -130,6 +134,9 @@ async def setup_assistant():
         return True
     except Exception as e:
         logger.exception(f"Error creating assistant: {str(e)}")
+        if hasattr(e, 'response'):
+            logger.error(f"Response status: {e.response.status_code}")
+            logger.error(f"Response content: {e.response.text}")
         return False
 
 async def run_user_interface():
