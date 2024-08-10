@@ -4,4 +4,5 @@ pylint
 flake8                                
 colorama                                   
 openai
-Pillow
+Pillowflask==2.0.2
+openai==0.27.0
