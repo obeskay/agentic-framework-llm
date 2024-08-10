@@ -64,6 +64,7 @@ class BaseAgent:
                 role="user",
                 content=content
             )
+            logging.info(f"Message created: {message}")
             
             if self.assistant_id is None:
                 raise ValueError("Assistant ID is not set. Please create an assistant first.")
@@ -74,11 +75,12 @@ class BaseAgent:
                 assistant_id=self.assistant_id,
                 instructions="Please respond to the user's message."
             )
+            logging.info(f"Run created: {run}")
             logging.info(f"Waiting for response from run {run.id}")
             return await self._wait_for_response(thread_id, run.id)
         except Exception as e:
             self._handle_error(e, "Error sending message")
-            return None
+            raise  # Re-raise the exception to be caught in the main.py
 
     async def _wait_for_response(self, thread_id: str, run_id: str) -> Dict[str, Any]:
         max_wait_time = 300  # 5 minutes

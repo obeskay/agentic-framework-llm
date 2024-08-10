@@ -42,7 +42,11 @@ async def send_message():
         return jsonify(response)
     except Exception as e:
         logger.exception(f"Unexpected error in send_message: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
+        error_details = str(e)
+        if hasattr(e, 'response'):
+            error_details += f"\nResponse status: {e.response.status_code}"
+            error_details += f"\nResponse content: {e.response.text}"
+        return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
 
 @app.route('/create_assistant', methods=['POST'])
 async def create_assistant():
