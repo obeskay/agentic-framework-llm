@@ -36,6 +36,7 @@ class BaseAgent:
     def __init__(self, model: str = "gpt-4o-mini"):
         self.client = OpenAI()
         self.model = model
+        self.assistant_id = None  # Add this line
 
     async def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         try:
