@@ -1,7 +1,7 @@
+import os
 import openai
 import speech_recognition as sr
 import pyttsx3
-import threading
 
 # Configuración de OpenAI
 openai.api_key = 'tu_api_key_aqui'
@@ -61,7 +61,51 @@ def listen():
             print(f"Error al solicitar resultados de Google Speech Recognition; {e}")
             return None
 
+def create_project_structure():
+    project_structure = {
+        "agentic_framework_llm": {
+            "agents": [
+                "__init__.py",
+                "base_agent.py",
+                "async_agent.py",
+                "self_improvement_agent.py",
+                "task_agent.py"
+            ],
+            "tools": [
+                "__init__.py",
+                "memory_manager.py",
+                "image_processing.py",
+                "pdf_tools.py",
+                "file_tools.py"
+            ],
+            "services": [
+                "__init__.py",
+                "speech_service.py",
+                "openai_service.py"
+            ],
+            "data": [
+                "examples/",
+                "sessions/"
+            ],
+            "main.py": "",
+            "requirements.txt": "",
+            "README.md": ""
+        }
+    }
+
+    for folder, files in project_structure.items():
+        os.makedirs(folder, exist_ok=True)
+        for file in files:
+            if isinstance(file, str):
+                with open(os.path.join(folder, file), 'w') as f:
+                    f.write("")  # Crear archivos vacíos
+            else:
+                os.makedirs(os.path.join(folder, file), exist_ok=True)
+
+    print("Estructura del proyecto creada con éxito.")
+
 def main():
+    create_project_structure()
     base_agent = BaseAgent()
     memory_manager = MemoryManager()
     self_improvement_agent = SelfImprovementAgent(base_agent)
