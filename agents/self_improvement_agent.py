@@ -7,16 +7,14 @@ from .base_agent import BaseAgent
 class SelfImprovementAgent(BaseAgent):
     def analyze_codebase(self):
         # Enhanced static analysis of the codebase
-        current_file = inspect.getfile(inspect.currentframe())
-        current_dir = os.path.dirname(current_file)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         self.issues = {}  # Dictionary to store identified issues and proposed fixes
-        for root, dirs, files in os.walk(current_dir):
-            for file in files:
-                if file.endswith(".py"):
-                    file_path = os.path.join(root, file)
-                    print(f"Analyzing {file}...")
-                    # Perform more detailed analysis
-                    self._detailed_analysis(file_path)
+        files = os.popen('git ls-files --exclude-standard --others --cached').read().splitlines()
+        for file_path in files:
+            if file_path.endswith(".py"):
+                print(f"Analyzing {file_path}...")
+                # Perform more detailed analysis
+                self._detailed_analysis(file_path)
 
     def _detailed_analysis(self, file_path):
         # Detailed analysis logic using pylint and flake8
