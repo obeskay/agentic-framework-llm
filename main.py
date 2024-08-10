@@ -1,17 +1,23 @@
 import requests
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 def call_tool(tool_name, params):
     try:
-        response = requests.post(f'http://localhost:5000/tools/{tool_name}', json=params)
+        url = f'http://localhost:5000/api/{tool_name}'
+        logging.info(f"Calling tool {tool_name} with params: {params}")
+        response = requests.post(url, json=params)
         response.raise_for_status()  # Raise an error for bad status codes
+        logging.info(f"Tool {tool_name} call successful. Response: {response.json()}")
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Error calling tool {tool_name}: {e}")
+        logging.error(f"Error calling tool {tool_name}: {e}")
         return None
 
 # Example usage
 result = call_tool('write_file', {'file_path': 'example.txt', 'content': 'Hello, World!'})
 if result:
-    print(f"Success: {result}")
+    logging.info(f"Success: {result}")
 else:
-    print("Failed to call tool.")
+    logging.error("Failed to call tool.")
