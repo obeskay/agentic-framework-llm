@@ -59,26 +59,65 @@ try:
     logging.info(f"Contenido de la respuesta: {response.text}")
 except requests.exceptions.ConnectionError:
     logging.error("No se pudo conectar al servidor Flask. Asegúrate de que esté ejecutándose en http://localhost:5001")
+import asyncio
 from agents.base_agent import BaseAgent
 from agents.self_improvement_agent import SelfImprovementAgent
 from agents.async_agent import AsyncAgent
 from tools.memory_manager import MemoryManager
-from tools.image_processing import encode_image, analyze_package_image
+from tools.image_processing import encode_image, analyze_package_image, pdf_to_images, extract_text_from_image
+import logging
 
-def main():
-    base_agent = BaseAgent()
-    self_improvement_agent = SelfImprovementAgent()
-    async_agent = AsyncAgent()
-    memory_manager = MemoryManager()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # Example usage
-    self_improvement_agent.analyze_codebase()
-    
-    image_path = "path/to/image.jpg"
-    encoded_image = encode_image(image_path)
-    analysis_result = analyze_package_image(image_path)
+async def main():
+    try:
+        base_agent = BaseAgent()
+        self_improvement_agent = SelfImprovementAgent()
+        async_agent = AsyncAgent()
+        memory_manager = MemoryManager()
 
-    # Add more functionality as needed
+        logging.info("Iniciando análisis del código base...")
+        await self_improvement_agent.analyze_codebase()
+        logging.info("Análisis del código base completado.")
+
+        logging.info("Iniciando mejora del código base...")
+        await self_improvement_agent.improve_codebase()
+        logging.info("Mejora del código base completada.")
+
+        image_path = "path/to/image.jpg"
+        logging.info(f"Procesando imagen: {image_path}")
+        encoded_image = encode_image(image_path)
+        analysis_result = analyze_package_image(image_path)
+        logging.info(f"Resultado del análisis de la imagen: {analysis_result}")
+
+        pdf_path = "path/to/document.pdf"
+        logging.info(f"Convirtiendo PDF a imágenes: {pdf_path}")
+        pdf_images = pdf_to_images(pdf_path)
+        for i, image in enumerate(pdf_images):
+            text = extract_text_from_image(image)
+            logging.info(f"Texto extraído de la página {i+1}: {text[:100]}...")  # Mostrar los primeros 100 caracteres
+
+        # Ejemplo de uso del AsyncAgent
+        tasks = [
+            lambda: base_agent.send_message("thread_id_1", "Hello, how are you?"),
+            lambda: base_agent.send_message("thread_id_2", "What's the weather like today?"),
+            lambda: self_improvement_agent.generate_new_tool("A tool for sentiment analysis")
+        ]
+        results = async_agent.run_async_tasks(tasks)
+        for i, result in enumerate(results):
+            logging.info(f"Resultado de la tarea {i+1}: {result}")
+
+        # Ejemplo de uso del MemoryManager
+        memory_manager.add_to_stm("Información importante a corto plazo")
+        memory_manager.add_to_ltm("Información importante a largo plazo")
+        memory_manager.save_session("session.json")
+
+        logging.info("Búsqueda en la memoria...")
+        search_results = memory_manager.search_memory("importante")
+        logging.info(f"Resultados de la búsqueda: {search_results}")
+
+    except Exception as e:
+        logging.error(f"Se produjo un error: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

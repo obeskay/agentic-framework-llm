@@ -70,33 +70,97 @@ class SelfImprovementAgent(BaseAgent):
                     return {'search': line, 'replace': "# " + line}
         return {}
 import os
+import ast
+import astroid
+from pylint import epylint as lint
+from typing import Dict, Any, List
 from agents.base_agent import BaseAgent
 
 class SelfImprovementAgent(BaseAgent):
-    def __init__(self, model="gpt-4o-mini"):
+    def __init__(self, model: str = "gpt-4o-mini"):
         super().__init__(model)
-        self.issues = {}
+        self.issues: Dict[str, List[Dict[str, Any]]] = {}
 
-    def analyze_codebase(self):
+    async def analyze_codebase(self) -> None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         files = os.popen('git ls-files --exclude-standard --others --cached').read().splitlines()
         for file_path in files:
             if file_path.endswith(".py"):
                 print(f"Analyzing {file_path}...")
-                self._detailed_analysis(file_path)
+                await self._detailed_analysis(file_path)
 
-    def _detailed_analysis(self, file_path):
-        # Implementation for detailed file analysis
-        pass
+    async def _detailed_analysis(self, file_path: str) -> None:
+        try:
+            with open(file_path, 'r') as file:
+                code = file.read()
+            
+            # Análisis estático con ast
+            tree = ast.parse(code)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    if len(node.body) > 20:
+                        self._add_issue(file_path, f"Function '{node.name}' is too long (> 20 lines)")
 
-    def _apply_fix(self, issue, fix):
-        # Implementation for applying fixes
-        pass
+            # Análisis con astroid
+            module = astroid.parse(code)
+            for function in module.body:
+                if isinstance(function, astroid.FunctionDef):
+                    complexity = function.complexity()
+                    if complexity > 10:
+                        self._add_issue(file_path, f"Function '{function.name}' has high complexity ({complexity})")
 
-    def _generate_fix(self, issue):
-        # Implementation for generating fixes
-        pass
+            # Análisis con pylint
+            (pylint_stdout, pylint_stderr) = lint.py_run(file_path, return_std=True)
+            for line in pylint_stdout:
+                if ":" in line:
+                    self._add_issue(file_path, line.strip())
 
-    def generate_new_tool(self, description):
-        # Implementation for generating new tools
-        pass
+        except Exception as e:
+            print(f"Error analyzing {file_path}: {str(e)}")
+
+    def _add_issue(self, file_path: str, issue: str) -> None:
+        if file_path not in self.issues:
+            self.issues[file_path] = []
+        self.issues[file_path].append({"description": issue, "fix": None})
+
+    async def _apply_fix(self, file_path: str, issue: Dict[str, Any]) -> bool:
+        if not issue['fix']:
+            return False
+        try:
+            with open(file_path, 'r') as file:
+                content = file.read()
+            content = content.replace(issue['fix']['search'], issue['fix']['replace'])
+            with open(file_path, 'w') as file:
+                file.write(content)
+            return True
+        except Exception as e:
+            print(f"Error applying fix to {file_path}: {str(e)}")
+            return False
+
+    async def _generate_fix(self, file_path: str, issue: Dict[str, Any]) -> Dict[str, str]:
+        prompt = f"Generate a fix for the following issue in {file_path}: {issue['description']}"
+        response = await self.send_message(None, prompt)
+        if response and 'content' in response:
+            fix_suggestion = response['content'][0].text
+            return {"search": issue['description'], "replace": fix_suggestion}
+        return {}
+
+    async def generate_new_tool(self, description: str) -> str:
+        prompt = f"Generate Python code for a new tool with the following description: {description}"
+        response = await self.send_message(None, prompt)
+        if response and 'content' in response:
+            return response['content'][0].text
+        return ""
+
+    async def improve_codebase(self) -> None:
+        await self.analyze_codebase()
+        for file_path, issues in self.issues.items():
+            for issue in issues:
+                if not issue['fix']:
+                    issue['fix'] = await self._generate_fix(file_path, issue)
+                if issue['fix']:
+                    success = await self._apply_fix(file_path, issue)
+                    if success:
+                        print(f"Applied fix for {issue['description']} in {file_path}")
+                    else:
+                        print(f"Failed to apply fix for {issue['description']} in {file_path}")
