@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify
 import logging
+import os
 from tools.read_file import read_file
 from tools.write_file import write_file
 from tools.search_and_replace import search_and_replace
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 @app.route('/api/read_file', methods=['POST'])
 def handle_read_file():
@@ -28,7 +29,11 @@ def handle_write_file():
     if not file_path or content is None:
         return jsonify({'error': 'Missing file_path or content in request'}), 400
 
-    logging.info(f"Attempting to write to file: {file_path}")
+    logging.debug(f"Attempting to write to file: {file_path}")
+    logging.debug(f"File exists: {os.path.exists(file_path)}")
+    logging.debug(f"File is writable: {os.access(file_path, os.W_OK) if os.path.exists(file_path) else 'N/A'}")
+    logging.debug(f"Directory is writable: {os.access(os.path.dirname(file_path), os.W_OK)}")
+
     success, message = write_file(file_path, content)
     if success:
         logging.info(f"Successfully wrote to file: {file_path}")
@@ -52,5 +57,10 @@ def handle_search_and_replace():
     else:
         return jsonify({'error': 'Failed to perform search and replace'}), 500
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Flask server is running", 200
+
 if __name__ == '__main__':
-    app.run(host='localhost', port=5000, debug=True)
+    logging.info("Starting Flask server...")
+    app.run(host='0.0.0.0', port=5000, debug=True)
