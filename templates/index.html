@@ -24,11 +24,14 @@
 
             try {
                 const response = await axios.post('/send_message', { message: message });
+                if (response.data.error) {
+                    throw new Error(response.data.error);
+                }
                 const assistantMessage = response.data.content[0].text;
                 displayMessage('Assistant: ' + assistantMessage);
             } catch (error) {
                 console.error('Error:', error);
-                displayMessage('Error: Failed to get response from the assistant.');
+                displayMessage('Error: ' + (error.response?.data?.error || error.message || 'Failed to get response from the assistant.'));
             }
         }
 

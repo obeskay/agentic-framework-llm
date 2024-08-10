@@ -18,9 +18,17 @@ def index():
 
 @app.route('/send_message', methods=['POST'])
 async def send_message():
-    content = request.json['message']
-    response = await agent.send_message(None, content)
-    return jsonify(response)
+    try:
+        content = request.json['message']
+        if agent.assistant_id is None:
+            return jsonify({'error': 'Assistant not initialized'}), 500
+        response = await agent.send_message(None, content)
+        if response is None:
+            return jsonify({'error': 'Failed to get response from assistant'}), 500
+        return jsonify(response)
+    except Exception as e:
+        logging.error(f"Error in send_message: {str(e)}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/create_assistant', methods=['POST'])
 async def create_assistant():
@@ -73,21 +81,26 @@ def handle_search_and_replace():
         return jsonify({'error': 'Failed to perform search and replace'}), 500
 
 async def setup_assistant():
-    assistant = await agent.create_assistant(
-        name="Task Assistant",
-        instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
-        tools=[
-            {"type": "code_interpreter"},
-            {"type": "function", "function": {"name": "read_file", "description": "Read the contents of a file"}},
-            {"type": "function", "function": {"name": "write_file", "description": "Write content to a file"}},
-            {"type": "function", "function": {"name": "search_and_replace", "description": "Search and replace text in a file"}}
-        ]
-    )
-    
-    if assistant is None:
-        print("Failed to create assistant. Exiting.")
+    try:
+        assistant = await agent.create_assistant(
+            name="Task Assistant",
+            instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
+            tools=[
+                {"type": "code_interpreter"},
+                {"type": "function", "function": {"name": "read_file", "description": "Read the contents of a file"}},
+                {"type": "function", "function": {"name": "write_file", "description": "Write content to a file"}},
+                {"type": "function", "function": {"name": "search_and_replace", "description": "Search and replace text in a file"}}
+            ]
+        )
+        
+        if assistant is None:
+            print("Failed to create assistant. Exiting.")
+            return False
+        print(f"Assistant created successfully with ID: {agent.assistant_id}")
+        return True
+    except Exception as e:
+        print(f"Error creating assistant: {str(e)}")
         return False
-    return True
 
 async def run_user_interface():
     ui = UserInterface()
