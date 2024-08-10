@@ -1,4 +1,4 @@
-def read_file(file_path: str) -> str:
+def read_file(file_path: str) -> tuple:
     """
     Reads the content from the specified file.
     
@@ -6,14 +6,16 @@ def read_file(file_path: str) -> str:
     file_path (str): The path to the file.
     
     Returns:
-    str: The content of the file.
+    tuple: A tuple containing the content of the file and a success flag (content, success).
     """
     try:
         with open(file_path, 'r') as file:
-            return file.read()
-    except FileNotFoundError:
-        print(f"Error: The file {file_path} does not exist.")
-        return ""
-    except IOError:
-        print(f"Error: Unable to read the file {file_path}.")
-        return ""
+            content = file.read()
+        print(f"Successfully read from file {file_path}.")
+        return content, True
+    except FileNotFoundError as e:
+        print(f"Error: The file {file_path} does not exist. Details: {e}")
+        return "", False
+    except IOError as e:
+        print(f"Error: Unable to read the file {file_path}. Details: {e}")
+        return "", False
