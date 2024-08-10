@@ -52,17 +52,17 @@ def speak(text):
 def listen():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Escuchando...")
+        logging.info("Escuchando...")
         audio = recognizer.listen(source)
         try:
             text = recognizer.recognize_google(audio, language='es-ES')
-            print(f"Has dicho: {text}")
+            logging.info(f"Has dicho: {text}")
             return text
         except sr.UnknownValueError:
-            print("No se pudo entender el audio")
+            logging.error("No se pudo entender el audio")
             return None
         except sr.RequestError as e:
-            print(f"Error al solicitar resultados de Google Speech Recognition; {e}")
+            logging.error(f"Error al solicitar resultados de Google Speech Recognition; {e}")
             return None
 
 def create_project_structure():
@@ -118,7 +118,7 @@ def main():
         command = listen()
         if command:
             reply = base_agent.send_message(command)
-            print(f"Respuesta: {reply}")
+            logging.info(f"Respuesta: {reply}")
             speak(reply)
             self_improvement_agent.self_improvement()  # Llamar a la función de auto-mejora después de cada respuesta
 
