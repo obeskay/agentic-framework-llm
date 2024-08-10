@@ -1,4 +1,4 @@
-def search_and_replace(file_path, search, replace):
+def search_and_replace(file_path: str, search: str, replace: str) -> None:
     """
     Searches for a string in the specified file and replaces it with another string.
     
@@ -7,10 +7,19 @@ def search_and_replace(file_path, search, replace):
     search (str): The string to search for.
     replace (str): The string to replace the search string with.
     """
-    with open(file_path, 'r') as file:
-        content = file.read()
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read()
+    except FileNotFoundError:
+        print(f"Error: The file {file_path} does not exist.")
+        return
+    except IOError:
+        print(f"Error: Unable to read the file {file_path}.")
+        return
     
-    content = content.replace(search, replace)
-    
-    with open(file_path, 'w') as file:
-        file.write(content)
+    try:
+        content = content.replace(search, replace)
+        with open(file_path, 'w') as file:
+            file.write(content)
+    except IOError:
+        print(f"Error: Unable to write to the file {file_path}.")
