@@ -5,6 +5,8 @@ import threading
 from agents.base_agent import BaseAgent
 from agents.self_improvement_agent import SelfImprovementAgent
 from tools.memory_manager import MemoryManager
+from tools.image_processing import ImageProcessing  # Importar el módulo de procesamiento de imágenes
+from agents.async_agent import AsyncAgent  # Importar el agente asíncrono
 
 # Configuración de OpenAI
 openai.api_key = 'tu_api_key_aqui'
@@ -36,6 +38,7 @@ def main():
     base_agent = BaseAgent()
     memory_manager = MemoryManager()
     self_improvement_agent = SelfImprovementAgent(base_agent)
+    async_agent = AsyncAgent()  # Crear instancia del agente asíncrono
 
     while True:
         command = listen()
