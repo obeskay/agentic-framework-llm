@@ -148,30 +148,28 @@ def setup_assistant():
             logger.error(f"Response content: {e.response.text}")
         return False
 
-async def run_user_interface():
+def run_user_interface():
     ui = UserInterface()
-    await ui.run()
+    ui.run()
 
-def run_flask():
-    app.run(host='0.0.0.0', port=5001, debug=True, use_reloader=False)
-
-async def main():
+def main():
     try:
         update_git_repository()
         
-        if not await setup_assistant():
+        if not setup_assistant():
             logger.error("Failed to set up assistant. Exiting.")
             return
 
         logger.info("Starting user interface...")
-        ui_task = asyncio.create_task(run_user_interface())
+        ui_thread = threading.Thread(target=run_user_interface)
+        ui_thread.start()
 
         logger.info("Starting Flask server...")
-        await asyncio.to_thread(run_flask)
+        app.run(host='0.0.0.0', port=5001, debug=True, use_reloader=False)
 
-        await ui_task
+        ui_thread.join()
     except Exception as e:
         logger.exception(f"Unexpected error in main function: {str(e)}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
