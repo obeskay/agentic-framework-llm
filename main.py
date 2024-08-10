@@ -3,6 +3,7 @@ from agents.self_improvement_agent import SelfImprovementAgent
 from tools.write_file import write_file
 from tools.read_file import read_file
 from tools.search_and_replace import search_and_replace
+from tools.tool_schema_converter import convert_tools_to_openai_schema
 
 def main():
     colorama.init()
@@ -15,6 +16,9 @@ def main():
     agent.apply_improvements()
     print(colorama.Fore.RESET + "Improvements applied successfully.")
 
+    # Convert tools to OpenAI schema
+    tools = convert_tools_to_openai_schema()
+    
     # Example usage of the tools
     file_path = 'example.txt'
     content = 'Hello, World!'
