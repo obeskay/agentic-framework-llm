@@ -64,3 +64,30 @@ def home():
 if __name__ == '__main__':
     logging.info("Starting Flask server...")
     app.run(host='0.0.0.0', port=5001, debug=True)
+from flask import Flask, render_template, request, jsonify
+from agents.base_agent import BaseAgent
+import asyncio
+
+app = Flask(__name__)
+agent = BaseAgent()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/send_message', methods=['POST'])
+async def send_message():
+    content = request.json['message']
+    response = await agent.send_message(None, content)
+    return jsonify(response)
+
+@app.route('/create_assistant', methods=['POST'])
+async def create_assistant():
+    name = request.json['name']
+    instructions = request.json['instructions']
+    tools = request.json['tools']
+    assistant = await agent.create_assistant(name, instructions, tools)
+    return jsonify(assistant)
+
+if __name__ == '__main__':
+    app.run(debug=True)
