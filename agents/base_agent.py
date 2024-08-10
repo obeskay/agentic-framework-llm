@@ -59,8 +59,12 @@ class BaseAgent:
             self._handle_error(e)
             return None
 
-    async def send_message(self, thread_id: str, content: str, stream: bool = False) -> Dict[str, Any]:
+    async def send_message(self, thread_id: str | None, content: str, stream: bool = False) -> Dict[str, Any]:
         try:
+            if thread_id is None:
+                thread = await self.create_thread()
+                thread_id = thread.id
+
             message = await self.client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
