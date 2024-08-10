@@ -30,7 +30,7 @@ class BaseAgent:
         # Additional checks for relevance can be added here
 import asyncio
 from openai import OpenAI
-from typing import List, Dict, Any
+from typing import List, Dict, Any, AsyncGenerator
 
 class BaseAgent:
     def __init__(self, model: str = "gpt-4o-mini"):
