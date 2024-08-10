@@ -38,7 +38,6 @@ def setup_assistant():
             logger.error("Failed to create assistant after multiple retries. Exiting.")
             return False
         logger.info(f"Assistant created successfully with ID: {assistant['id']}")
-        break
     except Exception as e:
         logger.exception(f"Error creating assistant: {str(e)}")
         if hasattr(e, 'response'):
