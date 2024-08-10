@@ -59,3 +59,26 @@ try:
     logging.info(f"Contenido de la respuesta: {response.text}")
 except requests.exceptions.ConnectionError:
     logging.error("No se pudo conectar al servidor Flask. Asegúrate de que esté ejecutándose en http://localhost:5001")
+from agents.base_agent import BaseAgent
+from agents.self_improvement_agent import SelfImprovementAgent
+from agents.async_agent import AsyncAgent
+from tools.memory_manager import MemoryManager
+from tools.image_processing import encode_image, analyze_package_image
+
+def main():
+    base_agent = BaseAgent()
+    self_improvement_agent = SelfImprovementAgent()
+    async_agent = AsyncAgent()
+    memory_manager = MemoryManager()
+
+    # Example usage
+    self_improvement_agent.analyze_codebase()
+    
+    image_path = "path/to/image.jpg"
+    encoded_image = encode_image(image_path)
+    analysis_result = analyze_package_image(image_path)
+
+    # Add more functionality as needed
+
+if __name__ == "__main__":
+    main()
