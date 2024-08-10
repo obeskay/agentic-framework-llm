@@ -10,40 +10,49 @@ class BaseAgent:
         self.model = model
         self.assistant_id = None
         self.thread_id = None
+        self.max_retries = 3
+        self.retry_delay = 2
 
     async def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
-        try:
-            # Ensure tools are valid
-            valid_tools = [
-                tool for tool in tools
-                if tool.get('type') in ['code_interpreter', 'function', 'file_search']
-            ]
-            assistant = await self.client.beta.assistants.create(
-                name=name,
-                instructions=instructions,
-                tools=valid_tools,
-                model=self.model
-            )
-            self.assistant_id = assistant.id
-            return assistant.model_dump()
-        except Exception as e:
-            self._handle_error(e)
-            return None
+        for attempt in range(self.max_retries):
+            try:
+                valid_tools = [
+                    tool for tool in tools
+                    if tool.get('type') in ['code_interpreter', 'function', 'retrieval']
+                ]
+                assistant = await self.client.beta.assistants.create(
+                    name=name,
+                    instructions=instructions,
+                    tools=valid_tools,
+                    model=self.model
+                )
+                self.assistant_id = assistant.id
+                return assistant.model_dump()
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    self._handle_error(e, "Failed to create assistant")
+                    return None
+                await asyncio.sleep(self.retry_delay)
 
     async def create_thread(self) -> Dict[str, Any]:
-        try:
-            thread = await self.client.beta.threads.create()
-            self.thread_id = thread.id
-            return thread.dict()
-        except Exception as e:
-            self._handle_error(e)
-            return None
+        for attempt in range(self.max_retries):
+            try:
+                thread = await self.client.beta.threads.create()
+                self.thread_id = thread.id
+                return thread.model_dump()
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    self._handle_error(e, "Failed to create thread")
+                    return None
+                await asyncio.sleep(self.retry_delay)
 
     async def send_message(self, thread_id: Optional[str], content: str) -> Dict[str, Any]:
         try:
             if thread_id is None:
                 if self.thread_id is None:
                     thread = await self.create_thread()
+                    if thread is None:
+                        raise ValueError("Failed to create a new thread")
                     thread_id = thread['id']
                 else:
                     thread_id = self.thread_id
@@ -64,26 +73,32 @@ class BaseAgent:
             )
             return await self._wait_for_response(thread_id, run.id)
         except Exception as e:
-            self._handle_error(e)
+            self._handle_error(e, "Error sending message")
             return None
 
     async def _wait_for_response(self, thread_id: str, run_id: str) -> Dict[str, Any]:
+        max_wait_time = 300  # 5 minutes
+        start_time = asyncio.get_event_loop().time()
         while True:
             try:
                 run = await self.client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
                 if run.status == "completed":
                     messages = await self.client.beta.threads.messages.list(thread_id=thread_id)
-                    return messages.data[0].dict()
+                    response = messages.data[0].model_dump()
+                    self._critique_response(response)
+                    return response
                 elif run.status == "failed":
                     raise Exception(f"Run failed: {run.last_error}")
+                elif asyncio.get_event_loop().time() - start_time > max_wait_time:
+                    raise TimeoutError("Response wait time exceeded")
                 else:
                     await asyncio.sleep(1)
             except Exception as e:
-                self._handle_error(e)
+                self._handle_error(e, "Error waiting for response")
                 return None
 
-    def _handle_error(self, error: Exception) -> None:
-        logging.error(f"Error occurred: {error}", exc_info=True)
+    def _handle_error(self, error: Exception, context: str) -> None:
+        logging.error(f"{context}: {error}", exc_info=True)
         # Implement additional error handling logic if necessary
 
     def _critique_response(self, response: Dict[str, Any]) -> None:
@@ -94,3 +109,21 @@ class BaseAgent:
         if len(content.split()) < 5:
             logging.warning("Response seems too short or incoherent.")
         # Implement more sophisticated criteria for evaluating the response
+
+    async def list_assistants(self) -> List[Dict[str, Any]]:
+        try:
+            assistants = await self.client.beta.assistants.list()
+            return [assistant.model_dump() for assistant in assistants.data]
+        except Exception as e:
+            self._handle_error(e, "Error listing assistants")
+            return []
+
+    async def delete_assistant(self, assistant_id: str) -> bool:
+        try:
+            await self.client.beta.assistants.delete(assistant_id)
+            if self.assistant_id == assistant_id:
+                self.assistant_id = None
+            return True
+        except Exception as e:
+            self._handle_error(e, f"Error deleting assistant {assistant_id}")
+            return False
