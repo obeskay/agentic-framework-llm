@@ -28,17 +28,28 @@ def listen():
             print(f"Error al solicitar resultados de Google Speech Recognition; {e}")
             return None
 
+def self_improvement():
+    improvement_prompt = "¿Cómo puedo mejorar mi código o lógica para ser más eficiente?"
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": improvement_prompt}]
+    )
+    improvement_suggestion = response['choices'][0]['message']['content']
+    print(f"Sugerencia de mejora: {improvement_suggestion}")
+    speak(improvement_suggestion)
+
 def main():
     while True:
         command = listen()
         if command:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": command}]
             )
             reply = response['choices'][0]['message']['content']
             print(f"Respuesta: {reply}")
             speak(reply)
+            self_improvement()  # Llamar a la función de auto-mejora después de cada respuesta
 
 if __name__ == '__main__':
     main()
