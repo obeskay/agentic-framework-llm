@@ -29,14 +29,16 @@ class BaseAgent:
             print("Response seems too short or incoherent.")
         # Additional checks for relevance can be added here
 import asyncio
-from openai import OpenAI
+from openai import AsyncOpenAI
 from typing import List, Dict, Any, AsyncGenerator
+import os
 
 class BaseAgent:
-    def __init__(self, model: str = "gpt-4o-mini"):
-        self.client = OpenAI()
+    def __init__(self, model: str = "gpt-4-1106-preview"):
+        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
-        self.assistant_id = None  # Add this line
+        self.assistant_id = None
+        self.thread_id = None
 
     async def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         try:
@@ -46,6 +48,7 @@ class BaseAgent:
                 tools=tools,
                 model=self.model
             )
+            self.assistant_id = assistant.id
             return assistant
         except Exception as e:
             self._handle_error(e)
@@ -54,6 +57,7 @@ class BaseAgent:
     async def create_thread(self) -> Dict[str, Any]:
         try:
             thread = await self.client.beta.threads.create()
+            self.thread_id = thread.id
             return thread
         except Exception as e:
             self._handle_error(e)
@@ -62,8 +66,11 @@ class BaseAgent:
     async def send_message(self, thread_id: str | None, content: str, stream: bool = False) -> Dict[str, Any]:
         try:
             if thread_id is None:
-                thread = await self.create_thread()
-                thread_id = thread.id
+                if self.thread_id is None:
+                    thread = await self.create_thread()
+                    thread_id = thread.id
+                else:
+                    thread_id = self.thread_id
 
             message = await self.client.beta.threads.messages.create(
                 thread_id=thread_id,
@@ -107,7 +114,7 @@ class BaseAgent:
                 run = await self.client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
                 if run.status == "completed":
                     messages = await self.client.beta.threads.messages.list(thread_id=thread_id)
-                    return messages.data[0]
+                    return messages.data[0].dict()
                 elif run.status == "failed":
                     raise Exception(f"Run failed: {run.last_error}")
                 else:

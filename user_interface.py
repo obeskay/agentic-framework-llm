@@ -1,11 +1,18 @@
 import asyncio
 from typing import List
-from agents.async_agent import AsyncAgent
+from agents.base_agent import BaseAgent
 
 class UserInterface:
     def __init__(self):
-        self.agent = AsyncAgent()
-        self.thread_id = None
+        self.agent = BaseAgent()
+
+    async def setup(self):
+        await self.agent.create_assistant(
+            name="Task Decomposer",
+            instructions="You are an AI assistant that helps decompose complex tasks into smaller subtasks and execute them.",
+            tools=[{"type": "code_interpreter"}, {"type": "retrieval"}]
+        )
+        await self.agent.create_thread()
 
     def welcome(self):
         print("¡Bienvenido al Asistente de Tareas Complejas!")
@@ -23,9 +30,8 @@ class UserInterface:
 
     async def decompose_task(self, task: str) -> List[str]:
         prompt = f"Descompone la siguiente tarea compleja en una lista de subtareas más pequeñas: {task}"
-        response = await self.agent.send_message(self.thread_id, prompt)
+        response = await self.agent.send_message(self.agent.thread_id, prompt)
         if response and isinstance(response, dict) and 'content' in response:
-            self.thread_id = response.get('thread_id', self.thread_id)
             content = response['content'][0].text if isinstance(response['content'], list) else response['content']
             subtasks = content.split('\n')
             return [subtask.strip() for subtask in subtasks if subtask.strip()]
@@ -33,14 +39,14 @@ class UserInterface:
 
     async def execute_subtask(self, subtask: str) -> str:
         prompt = f"Ejecuta la siguiente subtarea y proporciona una respuesta detallada: {subtask}"
-        response = await self.agent.send_message(self.thread_id, prompt)
+        response = await self.agent.send_message(self.agent.thread_id, prompt)
         if response and isinstance(response, dict) and 'content' in response:
-            self.thread_id = response.get('thread_id', self.thread_id)
             content = response['content'][0].text if isinstance(response['content'], list) else response['content']
             return content
         return "No se pudo completar la subtarea."
 
     async def run(self):
+        await self.setup()
         self.welcome()
         while True:
             self.show_menu()
