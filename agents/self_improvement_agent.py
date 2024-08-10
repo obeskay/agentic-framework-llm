@@ -72,7 +72,9 @@ class SelfImprovementAgent(BaseAgent):
 import os
 import ast
 import astroid
-from pylint import epylint as lint
+from pylint.lint import Run
+from pylint.reporters.text import TextReporter
+from io import StringIO
 from typing import Dict, Any, List
 from agents.base_agent import BaseAgent
 
@@ -110,8 +112,11 @@ class SelfImprovementAgent(BaseAgent):
                         self._add_issue(file_path, f"Function '{function.name}' has high complexity ({complexity})")
 
             # Análisis con pylint
-            (pylint_stdout, pylint_stderr) = lint.py_run(file_path, return_std=True)
-            for line in pylint_stdout:
+            pylint_output = StringIO()
+            reporter = TextReporter(pylint_output)
+            Run([file_path], reporter=reporter, exit=False)
+            pylint_output_str = pylint_output.getvalue()
+            for line in pylint_output_str.split('\n'):
                 if ":" in line:
                     self._add_issue(file_path, line.strip())
 
