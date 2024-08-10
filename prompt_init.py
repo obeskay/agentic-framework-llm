@@ -24,6 +24,10 @@ class BaseAgent:
         )
         return response['choices'][0]['message']['content']
 
+    def create_assistant(self, assistant_name):
+        logging.info(f"Creando asistente: {assistant_name}")
+        # Logic to create a new assistant can be added here
+
 class MemoryManager:
     def __init__(self):
         self.short_term_memory = []
@@ -31,9 +35,12 @@ class MemoryManager:
 
     def add_to_memory(self, key, value):
         self.long_term_memory[key] = value
+        logging.info(f"Agregado a memoria: {key} -> {value}")
 
     def get_from_memory(self, key):
-        return self.long_term_memory.get(key, None)
+        value = self.long_term_memory.get(key, None)
+        logging.info(f"Recuperado de memoria: {key} -> {value}")
+        return value
 
 class SelfImprovementAgent:
     def __init__(self, agent):
