@@ -1,37 +1,8 @@
 import asyncio
-from openai import OpenAI
-
-class BaseAgent:
-    def __init__(self, model="gpt-4o-mini"):
-        self.client = OpenAI()
-        self.model = model
-
-    async def communicate(self, messages):
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=300,
-            )
-            self._critique_response(response)
-            return response.choices[0].message.content
-        except Exception as e:
-            self._handle_error(e)
-            return None
-
-    def _handle_error(self, error):
-        print(f"Error in API call: {error}")
-
-    def _critique_response(self, response):
-        # Basic critique logic to check for coherence and relevance
-        content = response.choices[0].message.content
-        if not content or len(content.split()) < 5:  # Simple check for coherence
-            print("Response seems too short or incoherent.")
-        # Additional checks for relevance can be added here
-import asyncio
-from openai import AsyncOpenAI
-from typing import List, Dict, Any, AsyncGenerator
 import os
+import logging
+from openai import AsyncOpenAI
+from typing import List, Dict, Any, AsyncGenerator, Optional
 
 class BaseAgent:
     def __init__(self, model: str = "gpt-4-1106-preview"):
@@ -124,14 +95,14 @@ class BaseAgent:
                 return None
 
     def _handle_error(self, error: Exception) -> None:
-        print(f"Error: {error}")
-        # Aquí podrías implementar un sistema de logging más robusto
+        logging.error(f"Error occurred: {error}", exc_info=True)
+        # Implementar lógica adicional de manejo de errores si es necesario
 
     def _critique_response(self, response: Dict[str, Any]) -> None:
-        if not response or 'content' not in response:
-            print("Response is empty or invalid.")
+        if not response or 'content' not in response or not response['content']:
+            logging.warning("Response is empty or invalid.")
             return
-        content = response['content'][0].text
+        content = response['content'][0].text if isinstance(response['content'][0], dict) else response['content'][0]
         if len(content.split()) < 5:
-            print("Response seems too short or incoherent.")
-        # Aquí podrías implementar criterios más sofisticados para evaluar la respuesta
+            logging.warning("Response seems too short or incoherent.")
+        # Implementar criterios más sofisticados para evaluar la respuesta
