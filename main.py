@@ -2,15 +2,18 @@ import requests
 import logging
 import os
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 def call_tool(tool_name, params):
     try:
         url = f'http://localhost:5000/api/{tool_name}'
-        logging.info(f"Calling tool {tool_name} with params: {params}")
+        logging.info(f"Llamando a la herramienta {tool_name} con parámetros: {params}")
+        logging.debug(f"URL completa: {url}")
         response = requests.post(url, json=params)
-        response.raise_for_status()  # Raise an error for bad status codes
-        logging.info(f"Tool {tool_name} call successful. Response: {response.json()}")
+        logging.debug(f"Código de estado de la respuesta: {response.status_code}")
+        logging.debug(f"Contenido de la respuesta: {response.text}")
+        response.raise_for_status()  # Lanza un error para códigos de estado incorrectos
+        logging.info(f"Llamada a la herramienta {tool_name} exitosa. Respuesta: {response.json()}")
         return response.json()
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -19,6 +22,9 @@ def call_tool(tool_name, params):
         else:
             logging.error(f"Error HTTP llamando a la herramienta {tool_name}: {e}")
         return None
+    except requests.exceptions.ConnectionError:
+        logging.error(f"Error de conexión. Asegúrate de que el servidor Flask esté ejecutándose en http://localhost:5000")
+        return None
     except requests.exceptions.RequestException as e:
         logging.error(f"Error llamando a la herramienta {tool_name}: {e}")
         return None
@@ -26,8 +32,20 @@ def call_tool(tool_name, params):
 # Ejemplo de uso
 home_dir = os.path.expanduser("~")
 file_path = os.path.join(home_dir, 'example.txt')
-result = call_tool('write_file', {'file_path': file_path, 'content': 'Hello, World!'})
-if result:
-    logging.info(f"Éxito: {result}")
+
+# Verificar si el directorio es escribible
+if not os.access(os.path.dirname(file_path), os.W_OK):
+    logging.error(f"No tienes permisos de escritura en el directorio: {os.path.dirname(file_path)}")
 else:
-    logging.error("No se pudo llamar a la herramienta.")
+    result = call_tool('write_file', {'file_path': file_path, 'content': 'Hello, World!'})
+    if result:
+        logging.info(f"Éxito: {result}")
+    else:
+        logging.error("No se pudo llamar a la herramienta.")
+
+# Verificar si el servidor Flask está ejecutándose
+try:
+    requests.get('http://localhost:5000')
+    logging.info("El servidor Flask está ejecutándose correctamente.")
+except requests.exceptions.ConnectionError:
+    logging.error("No se pudo conectar al servidor Flask. Asegúrate de que esté ejecutándose en http://localhost:5000")
