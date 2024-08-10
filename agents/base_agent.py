@@ -13,14 +13,19 @@ class BaseAgent:
 
     async def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         try:
+            # Ensure tools are valid
+            valid_tools = [
+                tool for tool in tools
+                if tool.get('type') in ['code_interpreter', 'function', 'retrieval']
+            ]
             assistant = await self.client.beta.assistants.create(
                 name=name,
                 instructions=instructions,
-                tools=tools,
+                tools=valid_tools,
                 model=self.model
             )
             self.assistant_id = assistant.id
-            return assistant.dict()
+            return assistant.model_dump()
         except Exception as e:
             self._handle_error(e)
             return None
@@ -48,6 +53,10 @@ class BaseAgent:
                 role="user",
                 content=content
             )
+            
+            if self.assistant_id is None:
+                raise ValueError("Assistant ID is not set. Please create an assistant first.")
+
             run = await self.client.beta.threads.runs.create(
                 thread_id=thread_id,
                 assistant_id=self.assistant_id,

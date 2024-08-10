@@ -59,7 +59,7 @@ def handle_search_and_replace():
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Flask server is running", 200
+    return render_template('index.html')
 
 if __name__ == '__main__':
     logging.info("Starting Flask server...")
