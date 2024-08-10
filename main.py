@@ -2,6 +2,8 @@ import asyncio
 import logging
 import subprocess
 from flask import Flask, request, jsonify, render_template
+from flask.views import View
+from werkzeug.exceptions import HTTPException
 from user_interface import UserInterface
 from agents.base_agent import BaseAgent
 from tools.read_file import read_file
@@ -9,6 +11,9 @@ from tools.write_file import write_file
 from tools.search_and_replace import search_and_replace
 
 app = Flask(__name__)
+
+app.add_url_rule('/send_message', view_func=SendMessageView.as_view('send_message'))
+app.add_url_rule('/create_assistant', view_func=CreateAssistantView.as_view('create_assistant'))
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -28,8 +33,10 @@ def update_git_repository():
 def index():
     return render_template('index.html')
 
-@app.route('/send_message', methods=['POST'])
-async def send_message():
+class SendMessageView(View):
+    methods = ['POST']
+
+    def dispatch_request(self):
     try:
         content = request.json.get('message')
         if not content:
@@ -63,8 +70,10 @@ async def send_message():
             error_details += f"\nResponse content: {e.response.text}"
         return jsonify({'error': f'An unexpected error occurred: {error_details}'}), 500
 
-@app.route('/create_assistant', methods=['POST'])
-async def create_assistant():
+class CreateAssistantView(View):
+    methods = ['POST']
+
+    def dispatch_request(self):
     name = request.json['name']
     instructions = request.json['instructions']
     tools = request.json['tools']
@@ -113,7 +122,7 @@ def handle_search_and_replace():
     else:
         return jsonify({'error': 'Failed to perform search and replace'}), 500
 
-async def setup_assistant():
+def setup_assistant():
     try:
         logger.info("Setting up assistant...")
         assistant = await agent.create_assistant(
