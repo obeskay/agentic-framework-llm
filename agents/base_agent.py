@@ -16,7 +16,7 @@ class BaseAgent:
             # Ensure tools are valid
             valid_tools = [
                 tool for tool in tools
-                if tool.get('type') in ['code_interpreter', 'function', 'retrieval']
+                if tool.get('type') in ['code_interpreter', 'function', 'file_search']
             ]
             assistant = await self.client.beta.assistants.create(
                 name=name,

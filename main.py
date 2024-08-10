@@ -76,7 +76,12 @@ async def setup_assistant():
     assistant = await agent.create_assistant(
         name="Task Assistant",
         instructions="You are a helpful assistant that can break down complex tasks and provide step-by-step guidance.",
-        tools=[{"type": "code_interpreter"}]
+        tools=[
+            {"type": "code_interpreter"},
+            {"type": "function", "function": {"name": "read_file", "description": "Read the contents of a file"}},
+            {"type": "function", "function": {"name": "write_file", "description": "Write content to a file"}},
+            {"type": "function", "function": {"name": "search_and_replace", "description": "Search and replace text in a file"}}
+        ]
     )
     
     if assistant is None:
