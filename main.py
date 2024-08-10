@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import subprocess
 from flask import Flask, request, jsonify, render_template
 from user_interface import UserInterface
 from agents.base_agent import BaseAgent
@@ -12,6 +13,16 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 logger = logging.getLogger(__name__)
 
 agent = BaseAgent()
+
+def update_git_repository():
+    try:
+        logger.info("Actualizando el repositorio Git...")
+        subprocess.run(["git", "fetch", "origin"], check=True)
+        subprocess.run(["git", "reset", "--hard", "origin/main"], check=True)
+        logger.info("Repositorio Git actualizado exitosamente.")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error al actualizar el repositorio Git: {e}")
+        raise
 
 @app.route('/')
 def index():
@@ -130,6 +141,8 @@ def run_flask():
 
 async def main():
     try:
+        update_git_repository()
+        
         if not await setup_assistant():
             logger.error("Failed to set up assistant. Exiting.")
             return
