@@ -1,0 +1,6 @@
+Flask                        
+requests                     
+pylint                     
+flake8                                
+colorama                                   
+openai                                   
