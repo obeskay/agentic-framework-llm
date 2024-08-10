@@ -16,7 +16,7 @@ def call_tool(tool_name, params):
         return None
 
 # Example usage
-result = call_tool('write_file', {'file_path': 'example.txt', 'content': 'Hello, World!'})
+result = call_tool('write_file', {'file_path': '/tmp/example.txt', 'content': 'Hello, World!'})
 if result:
     logging.info(f"Success: {result}")
 else:

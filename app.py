@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+import logging
 from tools.read_file import read_file
 from tools.write_file import write_file
 from tools.search_and_replace import search_and_replace
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 @app.route('/api/read_file', methods=['POST'])
 def handle_read_file():
@@ -26,11 +28,14 @@ def handle_write_file():
     if not file_path or content is None:
         return jsonify({'error': 'Missing file_path or content in request'}), 400
 
-    success = write_file(file_path, content)
+    logging.info(f"Attempting to write to file: {file_path}")
+    success, message = write_file(file_path, content)
     if success:
+        logging.info(f"Successfully wrote to file: {file_path}")
         return jsonify({'message': 'File written successfully'})
     else:
-        return jsonify({'error': 'Failed to write file'}), 500
+        logging.error(f"Failed to write to file: {file_path}. Error: {message}")
+        return jsonify({'error': f'Failed to write file: {message}'}), 500
 
 @app.route('/api/search_and_replace', methods=['POST'])
 def handle_search_and_replace():

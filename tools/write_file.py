@@ -3,7 +3,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-def write_file(file_path: str, content: str) -> bool:
+def write_file(file_path: str, content: str) -> tuple:
     """
     Writes the given content to the specified file.
     
@@ -12,25 +12,26 @@ def write_file(file_path: str, content: str) -> bool:
     content (str): The content to write to the file.
     
     Returns:
-    bool: True if the operation was successful, False otherwise.
+    tuple: (bool, str) - (True if successful, message) or (False if failed, error message)
     """
+    if not content:
+        return False, "No content provided to write"
+
     try:
         # Check if the directory exists, and create it if it doesn't
         directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
+        if directory and not os.path.exists(directory):
             os.makedirs(directory, mode=0o755, exist_ok=True)
         
         with open(file_path, 'w') as file:
             file.write(content)
         logging.info(f"Successfully wrote to file {file_path}.")
-        return True
+        return True, "File written successfully"
     except IOError as e:
-        logging.error(f"Error: Unable to write to the file {file_path}. Details: {e}")
-        return False
+        error_msg = f"Unable to write to the file {file_path}. Details: {e}"
+        logging.error(f"Error: {error_msg}")
+        return False, error_msg
     except Exception as e:
-        logging.error(f"Unexpected error occurred while writing to {file_path}: {e}")
-        return False
-    
-    if not content:
-        logging.warning(f"Warning: No content provided to write to {file_path}.")
-        return False
+        error_msg = f"Unexpected error occurred while writing to {file_path}: {e}"
+        logging.error(error_msg)
+        return False, error_msg
