@@ -2,12 +2,16 @@ import os
 import openai
 import speech_recognition as sr
 import pyttsx3
+import logging
 
 # Configuración de OpenAI
 openai.api_key = 'tu_api_key_aqui'
 
 # Inicialización de TTS
 engine = pyttsx3.init()
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
 
 class BaseAgent:
     def __init__(self, model="gpt-4o-mini"):
@@ -38,7 +42,7 @@ class SelfImprovementAgent:
     def self_improvement(self):
         improvement_prompt = "¿Cómo puedo mejorar mi código o lógica para ser más eficiente?"
         suggestion = self.agent.send_message(improvement_prompt)
-        print(f"Sugerencia de mejora: {suggestion}")
+        logging.info(f"Sugerencia de mejora: {suggestion}")
         speak(suggestion)
 
 def speak(text):
@@ -102,7 +106,7 @@ def create_project_structure():
             else:
                 os.makedirs(os.path.join(folder, file), exist_ok=True)
 
-    print("Estructura del proyecto creada con éxito.")
+    logging.info("Estructura del proyecto creada con éxito.")
 
 def main():
     create_project_structure()
