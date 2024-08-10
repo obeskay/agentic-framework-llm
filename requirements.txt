@@ -3,4 +3,4 @@ requests
 pylint                     
 flake8                                
 colorama                                   
-openai                                   
+openai                                   Pillow==9.5.0

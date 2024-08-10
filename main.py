@@ -64,7 +64,11 @@ from agents.base_agent import BaseAgent
 from agents.self_improvement_agent import SelfImprovementAgent
 from agents.async_agent import AsyncAgent
 from tools.memory_manager import MemoryManager
-from tools.image_processing import encode_image, analyze_package_image, pdf_to_images, extract_text_from_image
+try:
+    from tools.image_processing import encode_image, analyze_package_image, pdf_to_images, extract_text_from_image
+except ImportError:
+    logging.warning("PIL no está instalado. Las funciones de procesamiento de imágenes no estarán disponibles.")
+    encode_image = analyze_package_image = pdf_to_images = extract_text_from_image = None
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -84,18 +88,21 @@ async def main():
         await self_improvement_agent.improve_codebase()
         logging.info("Mejora del código base completada.")
 
-        image_path = "path/to/image.jpg"
-        logging.info(f"Procesando imagen: {image_path}")
-        encoded_image = encode_image(image_path)
-        analysis_result = analyze_package_image(image_path)
-        logging.info(f"Resultado del análisis de la imagen: {analysis_result}")
+        if encode_image and analyze_package_image and pdf_to_images and extract_text_from_image:
+            image_path = "path/to/image.jpg"
+            logging.info(f"Procesando imagen: {image_path}")
+            encoded_image = encode_image(image_path)
+            analysis_result = analyze_package_image(image_path)
+            logging.info(f"Resultado del análisis de la imagen: {analysis_result}")
 
-        pdf_path = "path/to/document.pdf"
-        logging.info(f"Convirtiendo PDF a imágenes: {pdf_path}")
-        pdf_images = pdf_to_images(pdf_path)
-        for i, image in enumerate(pdf_images):
-            text = extract_text_from_image(image)
-            logging.info(f"Texto extraído de la página {i+1}: {text[:100]}...")  # Mostrar los primeros 100 caracteres
+            pdf_path = "path/to/document.pdf"
+            logging.info(f"Convirtiendo PDF a imágenes: {pdf_path}")
+            pdf_images = pdf_to_images(pdf_path)
+            for i, image in enumerate(pdf_images):
+                text = extract_text_from_image(image)
+                logging.info(f"Texto extraído de la página {i+1}: {text[:100]}...")  # Mostrar los primeros 100 caracteres
+        else:
+            logging.warning("Las funciones de procesamiento de imágenes no están disponibles debido a la falta de dependencias.")
 
         # Ejemplo de uso del AsyncAgent
         tasks = [
