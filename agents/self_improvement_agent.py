@@ -9,7 +9,7 @@ class SelfImprovementAgent(BaseAgent):
         # Enhanced static analysis of the codebase
         current_file = inspect.getfile(inspect.currentframe())
         current_dir = os.path.dirname(current_file)
-        self.issues = []  # List to store identified issues
+        self.issues = {}  # Dictionary to store identified issues and proposed fixes
         for root, dirs, files in os.walk(current_dir):
             for file in files:
                 if file.endswith(".py"):
@@ -29,19 +29,45 @@ class SelfImprovementAgent(BaseAgent):
         # Propose improvements based on detailed analysis
         print("Proposing improvements based on detailed analysis...")
         for issue in self.issues:
-            print(f"Proposed improvement: {issue}")
+            # Generate a proposed fix for the issue
+            fix = self._generate_fix(issue)
+            self.issues[issue] = fix
+            print(f"Proposed improvement: {issue} - Fix: {fix}")
 
     def apply_improvements(self):
         # Automate the application of proposed improvements
         print("Applying proposed improvements...")
-        for issue in self.issues:
-            # Placeholder for actual improvement application logic
-            # Example: Apply a simple fix for unused imports
-            if "Unused imports" in issue:
-                file_path = issue.split(" ")[-1]
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                content = content.replace("import", "# import")
-                with open(file_path, 'w') as f:
-                    f.write(content)
+        for issue, fix in self.issues.items():
+            # Apply the fix safely
+            if self._apply_fix(issue, fix):
                 print(f"Applied fix for {issue}")
+            else:
+                print(f"Failed to apply fix for {issue}")
+
+    def _apply_fix(self, issue, fix):
+        # Safely apply the fix without breaking the codebase
+        try:
+            file_path = issue.split(" ")[-1]
+            with open(file_path, 'r') as f:
+                content = f.read()
+            # Apply the fix
+            content = content.replace(fix['search'], fix['replace'])
+            with open(file_path, 'w') as f:
+                f.write(content)
+            return True
+        except Exception as e:
+            print(f"Error applying fix: {e}")
+            return False
+
+    def _generate_fix(self, issue):
+        # Generate a proposed fix for the issue
+        # This is a placeholder and should be replaced with actual logic
+        if "Unused imports" in issue:
+            file_path = issue.split(" ")[-1]
+            with open(file_path, 'r') as f:
+                content = f.read()
+            lines = content.splitlines()
+            for i, line in enumerate(lines):
+                if "import" in line:
+                    return {'search': line, 'replace': "# " + line}
+        return {}
