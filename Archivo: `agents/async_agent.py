@@ -12,3 +12,6 @@ class AsyncAgent:
     def wait_for_tasks(self):
         for task in self.tasks:
             task.join()
+
+    def clear_tasks(self):
+        self.tasks = []

@@ -1,5 +1,6 @@
 import base64
 from PIL import Image
+import io
 
 class ImageProcessing:
     @staticmethod
@@ -11,5 +12,14 @@ class ImageProcessing:
     @staticmethod
     def analyze_image(image_path):
         image = Image.open(image_path)
-        # Procesar la imagen según sea necesario
+        # Aquí se puede implementar el análisis de la imagen
+        return image
+
+    @staticmethod
+    def save_image(image, save_path):
+        image.save(save_path)
+
+    @staticmethod
+    def convert_to_grayscale(image_path):
+        image = Image.open(image_path).convert("L")
         return image
