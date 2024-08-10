@@ -1,0 +1,122 @@
+El proyecto consiste en un sistema de agentes automatizados basados en el modelo GPT-4o-mini de OpenAI. A continuación, se describen las funcionalidades (features) del sistema, priorizando la escalabilidad y la capacidad de auto-mejora (self-improvement). También se incluye una propuesta para la estructura del proyecto.
+
+1. Agente Base (BaseAgent)
+Descripción:
+BaseAgent es la clase fundamental que gestiona la comunicación con el modelo GPT-4o-mini. Este agente se encarga de crear asistentes, iniciar hilos de conversación y enviar mensajes al modelo, soportando tanto respuestas en tiempo real (streaming) como no streaming.
+
+Features Clave:
+Creación y Gestión de Asistentes: Facilita la creación de asistentes personalizados con modelos y herramientas específicos.
+Soporte de Hilos de Conversación: Permite la gestión de múltiples hilos de conversación simultáneamente, lo que es crucial para manejar varias tareas de forma independiente.
+Manejo de Respuestas Streaming y No-Streaming: Flexibilidad para manejar diferentes tipos de respuestas según la necesidad del flujo de trabajo.
+Escalabilidad:
+Modularidad: Esta clase está diseñada para ser extendida, permitiendo la adición de nuevas funcionalidades sin modificar el código base.
+Configurabilidad: Parámetros como el modelo, las instrucciones y las herramientas se pasan de manera dinámica, lo que facilita la personalización y expansión del sistema.
+2. Gestión de Memoria (MemoryManager)
+Descripción:
+El MemoryManager gestiona la memoria a corto plazo (STM) y largo plazo (LTM), permitiendo al sistema mantener el contexto de las interacciones del usuario a lo largo de sesiones.
+
+Features Clave:
+Corto Plazo (STM): Almacena temporalmente el contexto de la conversación actual, facilitando respuestas coherentes durante una sesión.
+Largo Plazo (LTM): Persiste información relevante entre sesiones, lo que permite al sistema recordar detalles importantes y mejorar la personalización a largo plazo.
+Gestión de Sesiones: Permite guardar y cargar sesiones de memoria, facilitando la continuidad entre diferentes instancias del uso del agente.
+Escalabilidad:
+Persistencia de Datos: Utiliza estructuras de datos persistentes, lo que permite escalar la capacidad de memoria según sea necesario.
+Optimización del Uso de Memoria: Implementa límites configurables para STM y LTM, asegurando que el sistema gestione la memoria de manera eficiente.
+3. Módulo de Auto-Mejora (SelfImprovementAgent)
+Descripción:
+El SelfImprovementAgent permite al sistema analizar su propio código y estructura para identificar áreas de mejora, proponiendo y aplicando cambios automáticamente.
+
+Features Clave:
+Análisis de Código Fuente: Escanea el repositorio del proyecto para detectar posibles optimizaciones y mejoras.
+Generación de Nuevas Herramientas: Basado en los análisis y el contenido aprendido (por ejemplo, transcripciones de videos), el agente puede crear nuevos módulos o herramientas y agregarlos al sistema.
+Aplicación de Mejora Continua: El sistema puede auto-optimizar su funcionamiento y extenderse con nuevas capacidades sin intervención humana.
+Escalabilidad:
+Automatización de Mejoras: La capacidad de generar y aplicar mejoras automáticamente reduce la necesidad de intervención manual, lo que es crucial para escalar el sistema.
+Expansión Dinámica: Permite la incorporación automática de nuevas herramientas y funcionalidades según las necesidades detectadas durante la operación del sistema.
+4. Módulo de Procesamiento de Imágenes y Documentos
+Descripción:
+Este módulo permite al sistema analizar imágenes (como paquetes dañados) y documentos (como organigramas en PDF), extrayendo información relevante para la toma de decisiones.
+
+Features Clave:
+Codificación de Imágenes: Convierte imágenes a base64 para ser procesadas por el modelo.
+Análisis de Documentos PDF: Convierte páginas de PDFs en imágenes para su análisis mediante reconocimiento óptico de caracteres (OCR).
+Manejo de Excepciones de Entrega: Identifica problemas en paquetes (daños, humedad, etc.) y toma acciones automatizadas como reembolsos o reemplazos.
+Escalabilidad:
+Integración con Herramientas Externas: El módulo puede expandirse para utilizar APIs externas para OCR u otros servicios de análisis, facilitando la integración con sistemas más grandes.
+Modularidad: Cada funcionalidad del módulo puede ser mejorada o reemplazada sin afectar el resto del sistema.
+5. Módulo de Gestión de Tareas Asíncronas (AsyncAgent)
+Descripción:
+El AsyncAgent permite la ejecución paralela de tareas, mejorando la eficiencia y reduciendo el tiempo de respuesta del sistema.
+
+Features Clave:
+Ejecución de Tareas en Paralelo: Soporte para correr múltiples tareas simultáneamente, cada una en su propio hilo de ejecución.
+Manejo de Hilos: Capacidad para manejar múltiples hilos de conversación y procesos de manera simultánea, aumentando la capacidad de respuesta del sistema.
+Escalabilidad:
+Concurrencia Escalable: Diseñado para manejar un número creciente de tareas y usuarios simultáneos sin degradación significativa en el rendimiento.
+Adaptabilidad: Se puede configurar para ajustar dinámicamente la cantidad de recursos asignados a tareas según la carga del sistema.
+Estructura del Proyecto (Project Structure)
+plaintext
+Copiar código
+agentic_framework_llm/
+│
+├── agents/
+│   ├── __init__.py
+│   ├── base_agent.py             # Definición del agente base
+│   ├── task_agent.py             # Agente para tareas específicas
+│   ├── async_agent.py            # Agente asíncrono para manejo de tareas paralelas
+│   └── self_improvement_agent.py # Agente de auto-mejora
+│
+├── tools/
+│   ├── __init__.py
+│   ├── memory_manager.py         # Módulo para gestión de memoria
+│   ├── file_tools.py             # Herramientas para manipulación de archivos
+│   ├── image_processing.py       # Procesamiento y análisis de imágenes
+│   ├── pdf_tools.py              # Herramientas para procesamiento de PDF
+│   └── tavily_tools.py           # Integración con API de Tavily para búsquedas web
+│
+├── data/
+│   ├── examples/                 # Ejemplos de datos (imágenes, PDFs)
+│   └── sessions/                 # Almacenamiento de sesiones de memoria
+│
+├── main.py                       # Script principal para ejecución del sistema
+├── requirements.txt              # Dependencias del proyecto
+└── README.md                     # Documentación del proyecto
+Consideraciones para la Escalabilidad y Auto-Mejora
+Modularidad Extrema: Cada componente del sistema debe estar encapsulado en módulos bien definidos, lo que facilita la actualización, mantenimiento y ampliación del sistema.
+
+Capacidad de Auto-Mejora: Implementar mecanismos automáticos para que el sistema analice y mejore su propio código y estructura, reduciendo la necesidad de intervención humana en la mejora continua.
+
+Expansión Dinámica de Herramientas: El sistema debe poder agregar nuevas herramientas y módulos de forma dinámica en respuesta a nuevas necesidades o aprendizajes.
+
+Persistencia y Recuperación de Estado: Los módulos de memoria y gestión de sesiones aseguran que el sistema pueda continuar desde donde lo dejó, lo cual es esencial en entornos de producción.
+
+Soporte para Integración Continua: El diseño debe permitir la integración fácil con APIs externas y nuevas tecnologías, asegurando que el sistema pueda evolucionar sin necesidad de rediseños complejos.
+
+
+Ejemplo de uso de api de openai:
+
+from openai import OpenAI
+
+client = OpenAI()
+
+response = client.chat.completions.create(
+  model="gpt-4o-mini",
+  messages=[
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What’s in this image?"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+            "detail": "high"
+          },
+        },
+      ],
+    }
+  ],
+  max_tokens=300,
+)
+
+print(response.choices[0].message.content)

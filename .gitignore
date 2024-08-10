@@ -1,0 +1,6 @@
+.aider*
+node_modules
+venv
+.next
+.env
+*__pycache__*

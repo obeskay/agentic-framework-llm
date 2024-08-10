@@ -13,7 +13,24 @@ class BaseAgent:
         self.max_retries = 3
         self.retry_delay = 2
 
-    def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
+# Rest of the BaseAgent class implementation...
+
+# Add this at the end of the file
+if __name__ == "__main__":
+    pass
+else:
+    from .base_agent import BaseAgent
+
+class BaseAgent:
+    def __init__(self, model: str = "gpt-4-1106-preview"):
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.model = model
+        self.assistant_id = None
+        self.thread_id = None
+        self.max_retries = 3
+        self.retry_delay = 2
+
+                self.assistant_id = assistant.id
         for attempt in range(self.max_retries):
             try:
                 valid_tools = [

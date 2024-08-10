@@ -1,10 +1,10 @@
 import asyncio
 from typing import List
-from agents.base_agent import BaseAgent
+from agents.async_agent import AsyncAgent
 
 class UserInterface:
     def __init__(self):
-        self.agent = BaseAgent()
+        self.agent = AsyncAgent()
 
     async def setup(self):
         await self.agent.create_assistant(
