@@ -73,6 +73,7 @@ import os
 import ast
 import astroid
 import asyncio
+import subprocess
 from typing import Dict, Any, List
 from agents.base_agent import BaseAgent
 
@@ -82,10 +83,23 @@ class SelfImprovementAgent(BaseAgent):
         self.issues: Dict[str, List[Dict[str, Any]]] = {}
 
     async def analyze_codebase(self) -> None:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        files = os.popen('git ls-files --exclude-standard --others --cached').read().splitlines()
-        tasks = [self._detailed_analysis(file_path) for file_path in files if file_path.endswith(".py")]
-        await asyncio.gather(*tasks)
+        try:
+            # Usar git ls-files para obtener solo los archivos bajo control de versiones
+            result = subprocess.run(['git', 'ls-files'], capture_output=True, text=True, check=True)
+            files = result.stdout.splitlines()
+            
+            # Filtrar solo archivos Python
+            python_files = [file for file in files if file.endswith(".py")]
+            
+            # Crear tareas para el análisis detallado
+            tasks = [self._detailed_analysis(file_path) for file_path in python_files]
+            
+            # Ejecutar tareas de forma asíncrona
+            await asyncio.gather(*tasks)
+        except subprocess.CalledProcessError as e:
+            print(f"Error al obtener la lista de archivos de Git: {e}")
+        except Exception as e:
+            print(f"Error inesperado durante el análisis del código base: {e}")
 
     async def _detailed_analysis(self, file_path: str) -> None:
         try:
