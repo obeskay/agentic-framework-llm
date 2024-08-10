@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def call_tool(tool_name, params):
     try:
-        url = f'http://localhost:5000/api/{tool_name}'
+        url = f'http://localhost:5001/api/{tool_name}'
         logging.info(f"Llamando a la herramienta {tool_name} con parámetros: {params}")
         logging.debug(f"URL completa: {url}")
         response = requests.post(url, json=params)
@@ -53,9 +53,9 @@ else:
 
 # Verificar si el servidor Flask está ejecutándose
 try:
-    response = requests.get('http://localhost:5000')
+    response = requests.get('http://localhost:5001')
     logging.info(f"El servidor Flask está ejecutándose. Código de estado: {response.status_code}")
     logging.info(f"Headers de la respuesta: {response.headers}")
     logging.info(f"Contenido de la respuesta: {response.text}")
 except requests.exceptions.ConnectionError:
-    logging.error("No se pudo conectar al servidor Flask. Asegúrate de que esté ejecutándose en http://localhost:5000")
+    logging.error("No se pudo conectar al servidor Flask. Asegúrate de que esté ejecutándose en http://localhost:5001")
