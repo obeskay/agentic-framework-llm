@@ -1,26 +1,26 @@
 import os
 import logging
-import asyncio
-from openai import AsyncOpenAI
+import time
+from openai import OpenAI
 from typing import List, Dict, Any, Optional
 
 class BaseAgent:
     def __init__(self, model: str = "gpt-4-1106-preview"):
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
         self.assistant_id = None
         self.thread_id = None
         self.max_retries = 3
         self.retry_delay = 2
 
-    async def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def create_assistant(self, name: str, instructions: str, tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         for attempt in range(self.max_retries):
             try:
                 valid_tools = [
                     tool for tool in tools
                     if tool.get('type') in ['code_interpreter', 'function', 'retrieval']
                 ]
-                assistant = await self.client.beta.assistants.create(
+                assistant = self.client.beta.assistants.create(
                     name=name,
                     instructions=instructions,
                     tools=valid_tools,
@@ -32,26 +32,26 @@ class BaseAgent:
                 if attempt == self.max_retries - 1:
                     self._handle_error(e, "Failed to create assistant")
                     return None
-                await asyncio.sleep(self.retry_delay)
+                time.sleep(self.retry_delay)
 
-    async def create_thread(self) -> Dict[str, Any]:
+    def create_thread(self) -> Dict[str, Any]:
         for attempt in range(self.max_retries):
             try:
-                thread = await self.client.beta.threads.create()
+                thread = self.client.beta.threads.create()
                 self.thread_id = thread.id
                 return thread.model_dump()
             except Exception as e:
                 if attempt == self.max_retries - 1:
                     self._handle_error(e, "Failed to create thread")
                     return None
-                await asyncio.sleep(self.retry_delay)
+                time.sleep(self.retry_delay)
 
-    async def send_message(self, thread_id: Optional[str], content: str) -> Dict[str, Any]:
+    def send_message(self, thread_id: Optional[str], content: str) -> Dict[str, Any]:
         try:
             if thread_id is None:
                 if self.thread_id is None:
                     logging.info("Creating new thread")
-                    thread = await self.create_thread()
+                    thread = self.create_thread()
                     if thread is None:
                         raise ValueError("Failed to create a new thread")
                     thread_id = thread['id']
@@ -59,7 +59,7 @@ class BaseAgent:
                     thread_id = self.thread_id
 
             logging.info(f"Creating message in thread {thread_id}")
-            message = await self.client.beta.threads.messages.create(
+            message = self.client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
                 content=content
@@ -70,35 +70,35 @@ class BaseAgent:
                 raise ValueError("Assistant ID is not set. Please create an assistant first.")
 
             logging.info(f"Creating run with assistant {self.assistant_id}")
-            run = await self.client.beta.threads.runs.create(
+            run = self.client.beta.threads.runs.create(
                 thread_id=thread_id,
                 assistant_id=self.assistant_id,
                 instructions="Please respond to the user's message."
             )
             logging.info(f"Run created: {run}")
             logging.info(f"Waiting for response from run {run.id}")
-            return await self._wait_for_response(thread_id, run.id)
+            return self._wait_for_response(thread_id, run.id)
         except Exception as e:
             self._handle_error(e, "Error sending message")
             raise  # Re-raise the exception to be caught in the main.py
 
-    async def _wait_for_response(self, thread_id: str, run_id: str) -> Dict[str, Any]:
+    def _wait_for_response(self, thread_id: str, run_id: str) -> Dict[str, Any]:
         max_wait_time = 300  # 5 minutes
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.time()
         while True:
             try:
-                run = await self.client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
+                run = self.client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
                 if run.status == "completed":
-                    messages = await self.client.beta.threads.messages.list(thread_id=thread_id)
+                    messages = self.client.beta.threads.messages.list(thread_id=thread_id)
                     response = messages.data[0].model_dump()
                     self._critique_response(response)
                     return response
                 elif run.status == "failed":
                     raise Exception(f"Run failed: {run.last_error}")
-                elif asyncio.get_event_loop().time() - start_time > max_wait_time:
+                elif time.time() - start_time > max_wait_time:
                     raise TimeoutError("Response wait time exceeded")
                 else:
-                    await asyncio.sleep(1)
+                    time.sleep(1)
             except Exception as e:
                 self._handle_error(e, "Error waiting for response")
                 return None
@@ -116,17 +116,17 @@ class BaseAgent:
             logging.warning("Response seems too short or incoherent.")
         # Implement more sophisticated criteria for evaluating the response
 
-    async def list_assistants(self) -> List[Dict[str, Any]]:
+    def list_assistants(self) -> List[Dict[str, Any]]:
         try:
-            assistants = await self.client.beta.assistants.list()
+            assistants = self.client.beta.assistants.list()
             return [assistant.model_dump() for assistant in assistants.data]
         except Exception as e:
             self._handle_error(e, "Error listing assistants")
             return []
 
-    async def delete_assistant(self, assistant_id: str) -> bool:
+    def delete_assistant(self, assistant_id: str) -> bool:
         try:
-            await self.client.beta.assistants.delete(assistant_id)
+            self.client.beta.assistants.delete(assistant_id)
             if self.assistant_id == assistant_id:
                 self.assistant_id = None
             return True
