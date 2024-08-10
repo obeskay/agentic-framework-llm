@@ -72,9 +72,7 @@ class SelfImprovementAgent(BaseAgent):
 import os
 import ast
 import astroid
-from pylint.lint import Run
-from pylint.reporters.text import TextReporter
-from io import StringIO
+import asyncio
 from typing import Dict, Any, List
 from agents.base_agent import BaseAgent
 
@@ -86,40 +84,33 @@ class SelfImprovementAgent(BaseAgent):
     async def analyze_codebase(self) -> None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         files = os.popen('git ls-files --exclude-standard --others --cached').read().splitlines()
-        for file_path in files:
-            if file_path.endswith(".py"):
-                print(f"Analyzing {file_path}...")
-                await self._detailed_analysis(file_path)
+        tasks = [self._detailed_analysis(file_path) for file_path in files if file_path.endswith(".py")]
+        await asyncio.gather(*tasks)
 
     async def _detailed_analysis(self, file_path: str) -> None:
         try:
-            with open(file_path, 'r') as file:
-                code = file.read()
-            
-            # Análisis estático con ast
-            tree = ast.parse(code)
-            for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef):
-                    if len(node.body) > 20:
-                        self._add_issue(file_path, f"Function '{node.name}' is too long (> 20 lines)")
+            print(f"Analyzing {file_path}...")
+            async with asyncio.timeout(30):  # Límite de 30 segundos por archivo
+                with open(file_path, 'r') as file:
+                    code = file.read()
+                
+                # Análisis estático con ast
+                tree = ast.parse(code)
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.FunctionDef):
+                        if len(node.body) > 20:
+                            self._add_issue(file_path, f"Function '{node.name}' is too long (> 20 lines)")
 
-            # Análisis con astroid
-            module = astroid.parse(code)
-            for function in module.body:
-                if isinstance(function, astroid.FunctionDef):
-                    complexity = function.complexity()
-                    if complexity > 10:
-                        self._add_issue(file_path, f"Function '{function.name}' has high complexity ({complexity})")
+                # Análisis con astroid
+                module = astroid.parse(code)
+                for function in module.body:
+                    if isinstance(function, astroid.FunctionDef):
+                        complexity = function.complexity()
+                        if complexity > 10:
+                            self._add_issue(file_path, f"Function '{function.name}' has high complexity ({complexity})")
 
-            # Análisis con pylint
-            pylint_output = StringIO()
-            reporter = TextReporter(pylint_output)
-            Run([file_path], reporter=reporter, exit=False)
-            pylint_output_str = pylint_output.getvalue()
-            for line in pylint_output_str.split('\n'):
-                if ":" in line:
-                    self._add_issue(file_path, line.strip())
-
+        except asyncio.TimeoutError:
+            print(f"Analysis of {file_path} timed out after 30 seconds")
         except Exception as e:
             print(f"Error analyzing {file_path}: {str(e)}")
 
